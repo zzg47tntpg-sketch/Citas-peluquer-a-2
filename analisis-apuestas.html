@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Análisis de apuestas</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f2f6f4;--card:#fff;--ink:#14231c;--mut:#5d7066;--acc:#0f8a5f;--acc2:#dff3ea;--line:#d3e0d9;--bad:#c0392b;--good:#0f8a5f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1713;--card:#18231d;--ink:#e8f2ec;--mut:#92a99b;--acc:#3ddc97;--acc2:#1f3a2d;--line:#2a3d33;--bad:#ff7b6b;--good:#3ddc97}}
+:root[data-theme="dark"]{--bg:#0f1713;--card:#18231d;--ink:#e8f2ec;--mut:#92a99b;--acc:#3ddc97;--acc2:#1f3a2d;--line:#2a3d33;--bad:#ff7b6b;--good:#3ddc97}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:1.4rem;margin:6px 0 12px}
+nav{display:flex;gap:6px;margin-bottom:12px}
+nav button{flex:1;padding:10px 6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:600 .9rem system-ui,sans-serif;cursor:pointer}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+:root[data-theme="dark"] nav button.on{color:#06281a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) nav button.on{color:#06281a}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:1rem;margin:0 0 10px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:.8rem;color:var(--mut)}
+input,select{width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit}
+select option{color:#000}
+.btn{width:100%;margin-top:10px;padding:12px;border:0;border-radius:10px;background:var(--acc);color:#fff;font:600 1rem system-ui,sans-serif;cursor:pointer}
+:root[data-theme="dark"] .btn{color:#06281a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06281a}}
+.res{margin-top:12px;display:grid;gap:6px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--acc2);border-radius:8px;font-size:.92rem}
+.row b{text-align:right}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.verdict{padding:10px;border-radius:8px;font-weight:600;border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.st{background:var(--acc2);border-radius:10px;padding:10px}
+.st small{display:block;color:var(--mut);font-size:.75rem}
+.st b{font-size:1.1rem}
+.bet{padding:10px 0;border-top:1px solid var(--line)}
+.bet:first-child{border-top:0}
+.bet .t{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.bet .m{color:var(--mut);font-size:.82rem;margin:2px 0 8px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts button{padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:.82rem;cursor:pointer}
+.acts button.sel{background:var(--acc);border-color:var(--acc);color:#fff}
+.note{color:var(--mut);font-size:.78rem;margin-top:16px}
+.hide{display:none}
+textarea{width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;resize:vertical}
+.btn:disabled{opacity:.6}
+.sm{margin-top:8px;padding:8px;font-size:.85rem}
+nav button{font-size:.76rem;padding:10px 2px}
+</style>
+</head>
+<body>
+<main>
+<h1>Análisis de apuestas</h1>
+<nav>
+<button data-t="p" class="on">Pronóstico</button>
+<button data-t="v">Valor</button>
+<button data-t="m">Margen 1X2</button>
+<button data-t="r">Registro</button>
+<button data-t="h">Historial</button>
+</nav>
+
+<section id="p">
+<div class="card">
+<h2>Pronóstico de un partido</h2>
+<label>Foto del partido (captura con equipos y cuotas)<input id="pf" type="file" accept="image/*"></label>
+<label style="margin-top:10px">Partido (solo si no subes foto)<input id="pm" placeholder="Equipo local - Equipo visitante"></label>
+<label style="margin-top:10px">Competición y fecha (opcional)<input id="pc" placeholder="LaLiga, sábado"></label>
+<label style="margin-top:10px">Datos extra (opcional)<textarea id="pd" rows="3" placeholder="Lesiones, forma reciente, alineaciones..."></textarea></label>
+<h2 style="margin-top:14px">Cuotas (opcional, para encontrar valor)</h2>
+<div class="g" style="grid-template-columns:1fr 1fr 1fr">
+<label>Local (1)<input id="q1" inputmode="decimal" placeholder="2.10"></label>
+<label>Empate (X)<input id="qx" inputmode="decimal" placeholder="3.40"></label>
+<label>Visitante (2)<input id="q2" inputmode="decimal" placeholder="3.60"></label>
+</div>
+<div class="g" style="margin-top:10px">
+<label>Más de 2.5 goles<input id="qo" inputmode="decimal" placeholder="1.85"></label>
+<label>Ambos marcan (sí)<input id="qb" inputmode="decimal" placeholder="1.80"></label>
+</div>
+<button class="btn" id="pgo" type="button">Analizar partido</button>
+<div class="res" id="pr"></div>
+</div>
+</section>
+
+<section id="v" class="hide">
+<div class="card">
+<h2>¿Tiene valor esta apuesta?</h2>
+<div class="g">
+<label>Cuota (decimal)<input id="vo" inputmode="decimal" placeholder="2.10"></label>
+<label>Tu probabilidad (%)<input id="vp" inputmode="decimal" placeholder="52"></label>
+<label>Banca (€)<input id="vb" inputmode="decimal" placeholder="500"></label>
+<label>Fracción de Kelly<select id="vk"><option value="0.25">1/4 (prudente)</option><option value="0.5">1/2</option><option value="1">Completo</option></select></label>
+</div>
+<button class="btn" id="vgo" type="button">Calcular</button>
+<div class="res" id="vr"></div>
+</div>
+</section>
+
+<section id="m" class="hide">
+<div class="card">
+<h2>Margen de la casa y probabilidades reales</h2>
+<div class="g" style="grid-template-columns:1fr 1fr 1fr">
+<label>Local (1)<input id="m1" inputmode="decimal" placeholder="2.10"></label>
+<label>Empate (X)<input id="mx" inputmode="decimal" placeholder="3.40"></label>
+<label>Visitante (2)<input id="m2" inputmode="decimal" placeholder="3.60"></label>
+</div>
+<button class="btn" id="mgo" type="button">Calcular</button>
+<div class="res" id="mr"></div>
+</div>
+</section>
+
+<section id="r" class="hide">
+<div class="card">
+<h2>Resumen</h2>
+<label>Banca inicial (€)<input id="rb" inputmode="decimal" placeholder="500"></label>
+<div class="stats" id="rs" style="margin-top:10px"></div>
+</div>
+<div class="card">
+<h2>Nueva apuesta</h2>
+<label>Evento<input id="re" placeholder="Equipo A - Equipo B (1)"></label>
+<div class="g" style="margin-top:10px">
+<label>Cuota<input id="ro" inputmode="decimal" placeholder="2.10"></label>
+<label>Importe (€)<input id="rm" inputmode="decimal" placeholder="10"></label>
+</div>
+<button class="btn" id="rad" type="button">Añadir</button>
+</div>
+</section>
+
+<section id="h" class="hide">
+<div class="card">
+<h2>Historial de apuestas</h2>
+<label>Mostrar<select id="hf"><option value="">Todas</option><option value="p">Pendientes</option><option value="g">Ganadas</option><option value="l">Perdidas</option><option value="n">Nulas</option></select></label>
+<div id="rl" style="margin-top:10px"></div>
+<p class="note" id="gs">Se guardan solo en este navegador.</p>
+</div>
+</section>
+
+<p class="note">Herramienta de cálculo, no garantiza resultados. Las probabilidades las pones tú y apostar siempre implica riesgo de perder dinero: juega solo lo que puedas permitirte perder. Si sientes que pierdes el control, busca ayuda profesional.</p>
+</main>
+<script>
+var $=function(i){return document.getElementById(i)};
+var num=function(v){return parseFloat(String(v).replace(",","."))};
+var f2=function(x){return (Math.round(x*100)/100).toFixed(2)};
+function row(parent,k,v,cls){var d=document.createElement("div");d.className="row";var a=document.createElement("span");a.textContent=k;var b=document.createElement("b");b.textContent=v;if(cls)b.className=cls;d.appendChild(a);d.appendChild(b);parent.appendChild(d)}
+
+document.querySelectorAll("nav button").forEach(function(b){b.addEventListener("click",function(){
+  document.querySelectorAll("nav button").forEach(function(x){x.classList.toggle("on",x===b)});
+  ["p","v","m","r","h"].forEach(function(s){$(s).classList.toggle("hide",s!==b.dataset.t)});
+})});
+
+$("vgo").addEventListener("click",function(){
+  var o=num($("vo").value),p=num($("vp").value)/100,bk=num($("vb").value),fr=num($("vk").value);
+  var r=$("vr");r.textContent="";
+  if(!(o>1)||!(p>0&&p<1)){var e=document.createElement("div");e.className="verdict neg";e.textContent="Introduce una cuota mayor que 1 y una probabilidad entre 0 y 100.";r.appendChild(e);return}
+  var imp=1/o,ev=p*o-1,edge=p-imp,k=ev/(o-1);
+  var v=document.createElement("div");v.className="verdict "+(ev>0?"pos":"neg");
+  v.textContent=ev>0?"Valor positivo según tu estimación":"Sin valor: a la larga perdería dinero";r.appendChild(v);
+  row(r,"Probabilidad implícita de la cuota",f2(imp*100)+"%");
+  row(r,"Tu ventaja (edge)",f2(edge*100)+" pts",edge>0?"pos":"neg");
+  row(r,"Valor esperado por 1 € apostado",f2(ev)+" €",ev>0?"pos":"neg");
+  row(r,"Cuota mínima para tener valor",f2(1/p));
+  if(ev>0){row(r,"Kelly (fracción elegida)",f2(k*fr*100)+"% de la banca");if(bk>0)row(r,"Importe sugerido",f2(k*fr*bk)+" €")}
+  else row(r,"Importe sugerido","0 €");
+});
+
+$("mgo").addEventListener("click",function(){
+  var os=[num($("m1").value),num($("mx").value),num($("m2").value)],n=["Local","Empate","Visitante"];
+  var r=$("mr");r.textContent="";
+  if(os.some(function(x){return !(x>1)})){var e=document.createElement("div");e.className="verdict neg";e.textContent="Introduce las tres cuotas (mayores que 1).";r.appendChild(e);return}
+  var s=os.reduce(function(a,x){return a+1/x},0);
+  row(r,"Margen de la casa",f2((s-1)*100)+"%",s>1?"neg":"pos");
+  os.forEach(function(x,i){row(r,n[i]+": prob. real / cuota justa",f2(100/x/s)+"% / "+f2(s*x))});
+});
+
+var KEY="apuestas-v1",S={b0:0,bets:[]},DBH=null;
+try{var raw=localStorage.getItem(KEY);if(raw)S=JSON.parse(raw)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(DBH){DBH.set({b0:S.b0||0,bets:S.bets}).catch(function(){})}}
+$("rb").value=S.b0||"";
+$("rb").addEventListener("change",function(){S.b0=num($("rb").value)||0;save();draw()});
+$("rad").addEventListener("click",function(){
+  var o=num($("ro").value),m=num($("rm").value),ev=$("re").value.trim();
+  if(!(o>1)||!(m>0))return;
+  S.bets.unshift({id:Date.now(),ev:ev||"Sin nombre",o:o,m:m,r:"p",d:new Date().toLocaleDateString("es-ES")});
+  $("re").value="";$("ro").value="";$("rm").value="";save();draw();
+});
+function pl(b){return b.r==="g"?b.m*(b.o-1):b.r==="l"?-b.m:0}
+function draw(){
+  var done=S.bets.filter(function(b){return b.r!=="p"}),wl=done.filter(function(b){return b.r==="g"||b.r==="l"});
+  var prof=done.reduce(function(a,b){return a+pl(b)},0),stk=wl.reduce(function(a,b){return a+b.m},0);
+  var wins=wl.filter(function(b){return b.r==="g"}).length;
+  var avg=wl.length?wl.reduce(function(a,b){return a+b.o},0)/wl.length:0;
+  var box=$("rs");box.textContent="";
+  [["Banca actual",f2((S.b0||0)+prof)+" €",""],["Beneficio",f2(prof)+" €",prof>0?"pos":prof<0?"neg":""],
+   ["Yield (ROI)",stk?f2(prof/stk*100)+"%":"—",prof>0?"pos":prof<0?"neg":""],["Acierto",wl.length?f2(wins/wl.length*100)+"% ("+wins+"/"+wl.length+")":"—",""],
+   ["Total apostado",f2(stk)+" €",""],["Cuota media",avg?f2(avg):"—",""]].forEach(function(x){
+    var d=document.createElement("div");d.className="st";var s=document.createElement("small");s.textContent=x[0];var b=document.createElement("b");b.textContent=x[1];if(x[2])b.className=x[2];d.appendChild(s);d.appendChild(b);box.appendChild(d)});
+  var L=$("rl");L.textContent="";
+  if(!S.bets.length){L.textContent="Aún no hay apuestas.";return}
+  var fv=$("hf").value;
+  S.bets.filter(function(b){return !fv||b.r===fv}).forEach(function(b){
+    var d=document.createElement("div");d.className="bet";
+    var t=document.createElement("div");t.className="t";var a=document.createElement("span");a.textContent=b.ev;var c=document.createElement("span");
+    if(b.r==="g"||b.r==="l"){c.textContent=(pl(b)>0?"+":"")+f2(pl(b))+" €";c.className=pl(b)>0?"pos":"neg"}else c.textContent=b.r==="n"?"Nula":"Pendiente";
+    t.appendChild(a);t.appendChild(c);d.appendChild(t);
+    var m=document.createElement("div");m.className="m";m.textContent=b.d+" · cuota "+f2(b.o)+" · "+f2(b.m)+" €";d.appendChild(m);
+    var ac=document.createElement("div");ac.className="acts";
+    [["g","Ganada"],["l","Perdida"],["n","Nula"],["p","Pendiente"]].forEach(function(x){
+      var bt=document.createElement("button");bt.type="button";bt.textContent=x[1];if(b.r===x[0])bt.className="sel";
+      bt.addEventListener("click",function(){b.r=x[0];save();draw()});ac.appendChild(bt)});
+    var del=document.createElement("button");del.type="button";del.textContent="Borrar";
+    del.addEventListener("click",function(){S.bets=S.bets.filter(function(z){return z.id!==b.id});save();draw()});ac.appendChild(del);
+    d.appendChild(ac);L.appendChild(d);
+  });
+}
+draw();
+
+$("hf").addEventListener("change",draw);
+(async function(){try{
+  var d=window.claude?await window.claude.use("db"):null,u=window.claude?await window.claude.use("user"):null;
+  if(!d||!u)return;
+  var id=await u.id();if(!id)return;
+  var ref=d.doc("data/users/"+id+"/estado"),sn=await ref.get();
+  if(sn.exists){var x=sn.data();if(x&&Array.isArray(x.bets)){S={b0:+x.b0||0,bets:x.bets};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}}
+  else if(S.bets.length||S.b0){await ref.set({b0:S.b0||0,bets:S.bets})}
+  DBH=ref;$("rb").value=S.b0||"";draw();
+  $("gs").textContent="Tus apuestas y tu banca se guardan en tu cuenta y las verás en cualquier dispositivo.";
+}catch(e){}})();
+function bank(){return (S.b0||0)+S.bets.filter(function(b){return b.r!=="p"}).reduce(function(a,b){return a+pl(b)},0)}
+var pk=$("pgo");
+pk.addEventListener("click",async function(){
+  var r=$("pr");r.textContent="";
+  function msg(t,c){var d=document.createElement("div");d.className="verdict "+(c||"");d.textContent=t;r.appendChild(d)}
+  var pm=$("pm").value.trim();
+  var fl=$("pf").files[0];
+  if(!pm&&!fl){msg("Sube una foto del partido o escribe los equipos.","neg");return}
+  pk.disabled=true;msg("Analizando el partido…");
+  try{
+    var sm=window.claude?await window.claude.use("sample"):null;
+    if(!sm)throw {code:"absent"};
+    var ins="Eres un analista deportivo. Si se adjunta una imagen, es una captura o foto de un partido con sus equipos y quizá sus cuotas: léela y extrae el partido, la competición y las cuotas visibles (null si no se ven; no las inventes). Analiza el partido y responde SOLO con un JSON sin texto extra. No tienes datos en directo: usa solo lo que sepas con seguridad y lo que escriba el usuario. Si no conoces bien a los equipos o su estado actual, pon confianza \"baja\" y dilo en el resumen; no inventes lesiones, resultados ni estadísticas. Probabilidades en % (p1+px+p2=100). Formato: {\"partido\":\"Local - Visitante\",\"c1\":null,\"cx\":null,\"c2\":null,\"co25\":null,\"cbtts\":null,\"resumen\":\"2-3 frases en español\",\"p1\":0,\"px\":0,\"p2\":0,\"over25\":0,\"btts\":0,\"marcador\":\"1-1\",\"confianza\":\"baja|media|alta\"}";
+    var a=await sm.json(ins+"\nPartido: "+(pm||"(el de la imagen)")+"\nCompetición/fecha: "+($("pc").value.trim()||"no indicada")+"\nDatos del usuario: "+($("pd").value.trim()||"ninguno"),fl?{modelTier:"default",cache:false,images:[fl]}:{modelTier:"default",cache:false});
+    if(!pm)pm=String(a.partido||"Partido");
+    [["q1","c1"],["qx","cx"],["q2","c2"],["qo","co25"],["qb","cbtts"]].forEach(function(z){if(!$(z[0]).value&&num(a[z[1]])>1)$(z[0]).value=String(a[z[1]])});
+    var s=a.p1+a.px+a.p2;
+    if(!(s>0))throw {code:"bad"};
+    r.textContent="";
+    var P=[a.p1/s*100,a.px/s*100,a.p2/s*100];
+    msg(a.resumen+" (Confianza: "+a.confianza+")");
+    row(r,"Marcador más probable",String(a.marcador));
+    var M=[["Local (1)",P[0],num($("q1").value)],["Empate (X)",P[1],num($("qx").value)],["Visitante (2)",P[2],num($("q2").value)],["Más de 2.5 goles",+a.over25,num($("qo").value)],["Ambos marcan",+a.btts,num($("qb").value)]];
+    M.forEach(function(m){row(r,m[0]+" · prob. / cuota justa",f2(m[1])+"% / "+f2(100/Math.max(m[1],1)))});
+    var bk=bank();
+    var V=M.filter(function(m){return m[2]>1}).map(function(m){var ev=m[1]/100*m[2]-1;return {n:m[0],o:m[2],ev:ev,st:ev>0?Math.min(ev/(m[2]-1)*0.25,0.05)*bk:0}}).sort(function(x,y){return y.ev-x.ev});
+    var h=document.createElement("h2");h.style.marginTop="14px";h.textContent="Apuestas recomendadas";r.appendChild(h);
+    if(!V.length){msg("Añade las cuotas de la casa para ver si hay alguna apuesta con valor.")}
+    else{
+      var G=V.filter(function(x){return x.ev>0.05});
+      if(!G.length)msg("Ninguna apuesta con valor claro: lo prudente es no apostar este partido.","neg");
+      else{
+        if(a.confianza==="baja")msg("Confianza baja: trata estos valores con mucha cautela.","neg");
+        G.forEach(function(x){
+          row(r,x.n+" @ "+f2(x.o),"Valor esperado +"+f2(x.ev*100)+"%"+(x.st>0?" · "+f2(x.st)+" €":""),"pos");
+          var bt=document.createElement("button");bt.type="button";bt.className="btn sm";
+          if(x.st>0){bt.textContent="Añadir al registro ("+f2(x.st)+" €)";bt.addEventListener("click",function(){S.bets.unshift({id:Date.now(),ev:pm+" — "+x.n,o:x.o,m:Math.round(x.st*100)/100,r:"p",d:new Date().toLocaleDateString("es-ES")});save();draw();bt.disabled=true;bt.textContent="Añadida"})}
+          else{bt.textContent="Pon tu banca en Registro para calcular el importe";bt.disabled=true}
+          r.appendChild(bt);
+        });
+      }
+    }
+    var n=document.createElement("p");n.className="note";n.textContent="Revisa que las cuotas leídas de la foto sean correctas. Probabilidades estimadas por IA sin datos en directo: no son una garantía. Importe sugerido: 1/4 de Kelly, con tope del 5% de tu banca.";r.appendChild(n);
+  }catch(e){
+    r.textContent="";
+    msg(e&&e.code==="not_granted"?"Necesitas permitir que la app consulte a Claude para analizar partidos.":e&&e.code==="rate_limited"?"Has llegado al límite de consultas. Prueba más tarde.":e&&(e.code==="image_rejected"||e.code==="images_unavailable")?"No se pudo leer la foto. Prueba con otra captura (JPG o PNG).":e&&e.code==="absent"?"El análisis no está disponible en este dispositivo o cuenta.":"No se pudo analizar el partido. Inténtalo de nuevo.","neg");
+  }
+  pk.disabled=false;
+});
+</script>
+</body>
+</html>
